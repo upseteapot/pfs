@@ -117,7 +117,6 @@ static int collide_particle_wall(float e, float radius, PFS_particle_t *p, PFS_w
     float min_depth = INFINITY;
     float axis_depth;
 
-    int collided = 1;
     for (size_t e=0; e < 4; e++)
     {
         x1 = wall_points_x[e];
@@ -138,66 +137,57 @@ static int collide_particle_wall(float e, float radius, PFS_particle_t *p, PFS_w
         project_particle(p, radius, axis_x, axis_y, &minB, &maxB);
 
         if (minA >= maxB || minB >= maxA)
+            return 0;
+
+        axis_depth = fmin(maxB - minA, maxA - minB);
+        if (axis_depth < min_depth)
         {
-            collided = 0;
-            break;
-        } else 
-        {
-            axis_depth = fmin(maxB - minA, maxA - minB);
-            if (axis_depth < min_depth)
-            {
-                min_depth = axis_depth;
-                normal_x = axis_x;
-                normal_y = axis_y;
-            }
+            min_depth = axis_depth;
+            normal_x = axis_x;
+            normal_y = axis_y;
         }
     }
+    
+    float closest_x;
+    float closest_y;
+    find_closest_point(p, wall_points_x, wall_points_y, &closest_x, &closest_y);                
+    axis_x = p->x - closest_x;
+    axis_y = p->y - closest_y;
 
-    if (collided)
+    axis_magnitude = sqrt(pow(axis_x, 2) + pow(axis_y, 2));
+    axis_x /= axis_magnitude;
+    axis_y /= axis_magnitude;
+
+    project_wall(wall_points_x, wall_points_y, axis_x, axis_y, &minA, &maxA);
+    project_particle(p, radius, axis_x, axis_y, &minB, &maxB);
+    
+    if (minA >= maxB || minB >= maxA)
+        return 0;
+
+    axis_depth = fmin(maxB - minA, maxA - minB);
+    if (axis_depth < min_depth)
     {
-        float closest_x;
-        float closest_y;
-        find_closest_point(p, wall_points_x, wall_points_y, &closest_x, &closest_y);                
-        axis_x = p->x - closest_x;
-        axis_y = p->y - closest_y;
-
-        axis_magnitude = sqrt(pow(axis_x, 2) + pow(axis_y, 2));
-        axis_x /= axis_magnitude;
-        axis_y /= axis_magnitude;
-
-        project_wall(wall_points_x, wall_points_y, axis_x, axis_y, &minA, &maxA);
-        project_particle(p, radius, axis_x, axis_y, &minB, &maxB);
-
-        if (!(minA >= maxB || minB >= maxA))
-        {
-            axis_depth = fmin(maxB - minA, maxA - minB);
-
-            if (axis_depth < min_depth)
-            {
-                min_depth = axis_depth;
-                normal_x = axis_x;
-                normal_y = axis_y;
-            }
-
-            if ((p->x - center_x) * normal_x + (p->y - center_y) * normal_y < 0.0f)
-            {
-                normal_x *= -1.0f;
-                normal_y *= -1.0f;
-            }
-
-            float imp = -(1.0f + e) * (p->vel_x * normal_x + p->vel_y * normal_y) / 
-                ((normal_x * normal_x + normal_y * normal_y));
-
-            p->vel_x += normal_x * imp;
-            p->vel_y += normal_y * imp;
-            p->x += normal_x * min_depth;
-            p->y += normal_y * min_depth;
-        }
+        min_depth = axis_depth;
+        normal_x = axis_x;
+        normal_y = axis_y;
     }
 
-    return collided;
-}
+    if ((p->x - center_x) * normal_x + (p->y - center_y) * normal_y < 0.0f)
+    {
+        normal_x *= -1.0f;
+        normal_y *= -1.0f;
+    }
 
+    float imp = -(1.0f + e) * (p->vel_x * normal_x + p->vel_y * normal_y) / 
+        ((normal_x * normal_x + normal_y * normal_y));
+
+    p->vel_x += normal_x * imp;
+    p->vel_y += normal_y * imp;
+    p->x += normal_x * min_depth;
+    p->y += normal_y * min_depth;
+    
+    return 1;
+}
 
 void pfs_create(PFS_t *pfs, PFS_state_t *state, size_t particles_size)
 {
