@@ -12,30 +12,33 @@ int main(void)
     float dt = 1.0f / FPS;
     SetTargetFPS(FPS);
     
-    float particle_radius = 2.0f;
+    float particle_radius = 1.0f;
 
     PFS_state_t state;
-    state.pixel_to_meter = 0.01f;
-    state.space_width = 500 * state.pixel_to_meter;
-    state.space_height = 500 * state.pixel_to_meter;
+    state.pixel_to_meter = 0.1f;
+    state.space_width = 8.0;
+    state.space_height = 300 * state.pixel_to_meter;
     state.particle_radius = particle_radius * state.pixel_to_meter;
-    state.time_speed = 0.005f;
-    state.start_velocity_magnitude = 343;
+    state.time_speed = 0.00005f;
+    state.start_velocity_magnitude = 0.9f;
     state.g = 9.8066;
     state.e = 1.0f;
 
     PFS_t pfs;
-    pfs_create(&pfs, &state, 500);
+    pfs_create(&pfs, &state, 2000);
     pfs_start_random(&pfs);
     
-    pfs_add_wall(&pfs, 250 * state.pixel_to_meter - 0.5f , 0.0f, 1.0f, 1.3f);
-    pfs_add_wall(&pfs, 2, 250 * state.pixel_to_meter - 0.1f, 250 * state.pixel_to_meter, 0.1f);
+    float amplitude = 1.5f;
+    float wall_height = 4.f;
+    float wall_width = 8.f;
+    pfs_add_wall(&pfs, state.space_width / 2.0f - wall_width / 2.0f, -wall_height / 2.0f, wall_width, wall_height);
+    pfs_add_wall(&pfs, state.space_width / 2.0f - wall_width / 2.0f, state.space_height - wall_height / 2.0f, wall_width, wall_height);
 
     PFS_particle_t *particle;
     PFS_wall_t *wall;
      
     float t = 0;
-    float freq = 343 / (500 * state.pixel_to_meter - 0.1f);
+    float freq = 40000;
 
     while (!WindowShouldClose())
     {
@@ -58,7 +61,15 @@ int main(void)
             wall = &pfs.walls_array[i];
             
             if (i == 0)
-                wall->y = -1.0f + sin(t * 2 * PI * freq * state.time_speed) * 0.1f;
+            {
+                wall->y = -wall_height / 2.0f + sin(t * 2 * PI * freq * state.time_speed) * amplitude;
+                wall->vel_y = cos(t * 2 * PI * freq * state.time_speed) * (amplitude * 2 * PI * freq);
+            }
+            if (i == 1)
+            {
+                wall->y = 500.0f * state.pixel_to_meter - wall_height / 2.0f + cos(t * 2 * PI * freq * state.time_speed) * amplitude;
+                wall->vel_y = -sin(t * 2 * PI * freq * state.time_speed) * (amplitude * 2 * PI * freq);
+            }
 
             DrawRectangle(
                 wall->x / state.pixel_to_meter, wall->y / state.pixel_to_meter, 

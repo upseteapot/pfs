@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
@@ -26,6 +27,8 @@ typedef struct
     float y;
     float width;
     float height;
+    float vel_y;
+    float vel_x;
 }  PFS_wall_t;
 
 typedef struct

@@ -4,7 +4,9 @@
 static void project_wall(float wall_points_x[4], float wall_points_y[4], float axis_x, float axis_y, float *min_proj, float *max_proj)
 {
     float projection;
-    
+    *min_proj = INFINITY; 
+    *max_proj = -INFINITY; 
+
     for (size_t v=0; v < 4; v++)
     {
         projection = wall_points_x[v] * axis_x + wall_points_y[v] * axis_y;
@@ -63,8 +65,7 @@ static int collide_particles(float e, float radius, PFS_particle_t *p0, PFS_part
         float rvel_x = p0->vel_x - p1->vel_x;
         float rvel_y = p0->vel_y - p1->vel_y;
 
-        float imp = -(1.0f + e) * (rvel_x * normal_x + rvel_y * normal_y) / 
-            (2.0f * (normal_x * normal_x + normal_y * normal_y));
+        float imp = -(1.0f + e) * (rvel_x * normal_x + rvel_y * normal_y) / (2.0f * (normal_x * normal_x + normal_y * normal_y));
 
         p0->vel_x += normal_x * imp;
         p0->vel_y += normal_y * imp;
@@ -110,8 +111,8 @@ static int collide_particle_wall(float e, float radius, PFS_particle_t *p, PFS_w
     float normal_x;
     float normal_y;
     
-    float minA = INFINITY;
-    float maxA = -INFINITY;
+    float minA;
+    float maxA;
     float minB;
     float maxB;
     float min_depth = INFINITY;
@@ -140,6 +141,7 @@ static int collide_particle_wall(float e, float radius, PFS_particle_t *p, PFS_w
             return 0;
 
         axis_depth = fmin(maxB - minA, maxA - minB);
+        
         if (axis_depth < min_depth)
         {
             min_depth = axis_depth;
@@ -151,8 +153,8 @@ static int collide_particle_wall(float e, float radius, PFS_particle_t *p, PFS_w
     float closest_x;
     float closest_y;
     find_closest_point(p, wall_points_x, wall_points_y, &closest_x, &closest_y);                
-    axis_x = p->x - closest_x;
-    axis_y = p->y - closest_y;
+    axis_x = closest_x - p->x;
+    axis_y = closest_y - p->x;
 
     axis_magnitude = sqrt(pow(axis_x, 2) + pow(axis_y, 2));
     axis_x /= axis_magnitude;
@@ -165,6 +167,7 @@ static int collide_particle_wall(float e, float radius, PFS_particle_t *p, PFS_w
         return 0;
 
     axis_depth = fmin(maxB - minA, maxA - minB);
+    
     if (axis_depth < min_depth)
     {
         min_depth = axis_depth;
@@ -177,15 +180,16 @@ static int collide_particle_wall(float e, float radius, PFS_particle_t *p, PFS_w
         normal_x *= -1.0f;
         normal_y *= -1.0f;
     }
-
-    float imp = -(1.0f + e) * (p->vel_x * normal_x + p->vel_y * normal_y) / 
-        ((normal_x * normal_x + normal_y * normal_y));
+    
+    float rvel_x = p->vel_x - wall->vel_x;
+    float rvel_y = p->vel_y - wall->vel_y;
+    float imp = -(1.0f + e) * (rvel_x * normal_x + rvel_y * normal_y) / (normal_x * normal_x + normal_y * normal_y);
 
     p->vel_x += normal_x * imp;
     p->vel_y += normal_y * imp;
     p->x += normal_x * min_depth;
     p->y += normal_y * min_depth;
-    
+
     return 1;
 }
 
@@ -228,6 +232,8 @@ void pfs_add_wall(PFS_t *pfs, float x, float y, float width, float height)
     pfs->walls_array[pfs->walls_size].y = y;
     pfs->walls_array[pfs->walls_size].width = width;
     pfs->walls_array[pfs->walls_size].height = height;
+    pfs->walls_array[pfs->walls_size].vel_x = 0.0f;
+    pfs->walls_array[pfs->walls_size].vel_y = 0.0f;
 
     if (pfs->walls_size++ == pfs->walls_capacity)
     {
@@ -251,8 +257,29 @@ void pfs_update_particle(PFS_t *pfs, PFS_particle_t *particle, float delta_time)
         random_angle = ((float)rand() / RAND_MAX) * 2.0f * M_PI;
         particle->vel_x = cos(random_angle) * pfs->state->start_velocity_magnitude;
         particle->vel_y = -sin(random_angle) * pfs->state->start_velocity_magnitude;
+        
+        particle->x = pfs->state->space_width * (float)rand() / RAND_MAX;
+        particle->y = pfs->state->space_height * (float)rand() / RAND_MAX;
 
-        border = rand() % 4;
+        /*border = rand() % 2;
+
+        switch (border)
+        {
+            case 0:
+                particle->x = 0;
+                particle->y = ((float)rand() / RAND_MAX) * pfs->state->space_height;
+                break;
+
+            case 1:
+                particle->x = pfs->state->space_width;
+                particle->y = ((float)rand() / RAND_MAX) * pfs->state->space_height;
+                break;
+
+            default:
+                break;
+        }*/
+
+        /*border = rand() % 4;
 
         switch (border)
         {
@@ -278,7 +305,7 @@ void pfs_update_particle(PFS_t *pfs, PFS_particle_t *particle, float delta_time)
 
             default:
                 break;
-        }
+        }*/
     }
 }
 
