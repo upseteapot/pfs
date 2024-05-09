@@ -258,10 +258,23 @@ void pfs_update_particle(PFS_t *pfs, PFS_particle_t *particle, float delta_time)
         particle->vel_x = cos(random_angle) * pfs->state->start_velocity_magnitude;
         particle->vel_y = -sin(random_angle) * pfs->state->start_velocity_magnitude;
         
-        particle->x = pfs->state->space_width * (float)rand() / RAND_MAX;
-        particle->y = pfs->state->space_height * (float)rand() / RAND_MAX;
+        bool intersect = true;
+        while (intersect)
+        {
+            particle->x = pfs->state->space_width * (float)rand() / RAND_MAX;
+            particle->y = pfs->state->space_height * (float)rand() / RAND_MAX;
+        
+            for (size_t i=0; i < pfs->walls_size; i++)
+            {
+                PFS_wall_t *wall = &pfs->walls_array[i];
+                intersect = wall->x < particle->x && particle->x < wall->x + wall->width &&
+                            wall->y < particle->y && particle->y < wall->y + wall->height;
+                if (!intersect)
+                    break;
+            }
+        }
 
-        /*border = rand() % 2;
+       /*border = rand() % 2;
 
         switch (border)
         {
