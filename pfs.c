@@ -246,7 +246,7 @@ void pfs_update_particle(PFS_t *pfs, PFS_particle_t *particle, float delta_time)
 {
     float random_angle;
     float real_delta_time = delta_time * pfs->state->time_speed;
-    int border;
+    //int border;
 
     particle->x += particle->vel_x * real_delta_time;
     particle->y += particle->vel_y * real_delta_time;
